@@ -9,6 +9,7 @@ name: Release
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:   # allow manual runs from the Actions tab
 
 # Needed to create tags and publish releases with the default GITHUB_TOKEN.
 permissions:
