@@ -71,7 +71,8 @@ jobs:
 
       - name: Configure
         if: steps.ver.outputs.version != ''
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPROJECT_VERSION=${{ steps.ver.outputs.version }}
+        # Quote the -D token: pwsh otherwise mangles the bare "=1.0.0" to "1".
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release "-DPROJECT_VERSION=${{ steps.ver.outputs.version }}"
 
       - name: Build
         if: steps.ver.outputs.version != ''

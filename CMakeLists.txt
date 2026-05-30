@@ -9,6 +9,14 @@ set(PROJECT_VERSION "0.0.0" CACHE STRING "Semantic version for this build")
 # windres on MinGW) so the .asi carries a File version in its properties.
 project(007FirstLightUltrawide VERSION ${PROJECT_VERSION} LANGUAGES CXX RC)
 
+# project() leaves these empty when PROJECT_VERSION isn't a full X.Y.Z; default
+# them so the version resource (FILEVERSION a,b,c,d) is always well-formed.
+foreach(_part MAJOR MINOR PATCH TWEAK)
+    if(NOT PROJECT_VERSION_${_part})
+        set(PROJECT_VERSION_${_part} 0)
+    endif()
+endforeach()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
