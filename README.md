@@ -186,8 +186,19 @@ automatically from the commit history using
 Commits that aren't `fix`/`feat`/breaking (e.g. `docs:`, `chore:`) build but
 publish **no** release. Each release attaches
 `007FirstLightUltrawide-vX.Y.Z.zip` (the `.asi` + generated `.ini`), and that
-version is the one embedded in the binary. The first release needs at least one
-`fix:`/`feat:` commit to seed a version.
+version is the one embedded in the binary.
+
+**Seeding or forcing a version.** Commit-based bumping needs a prior version tag
+to count from, so the **first** release (and any time you want a specific
+version) is cut by pushing a tag:
+
+```bash
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+The workflow builds that exact version and publishes it. After a version tag
+exists, pushes to `main` take over and auto-increment from it.
 
 > For releases to publish, the repo's **Settings → Actions → General → Workflow
 > permissions** must be set to *Read and write* (lets the default `GITHUB_TOKEN`
