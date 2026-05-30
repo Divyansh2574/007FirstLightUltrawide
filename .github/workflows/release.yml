@@ -1,14 +1,18 @@
 name: Release
 
-# Build an MSVC Release of the .asi and publish a GitHub Release whenever a new
-# commit lands on main. The version is derived from the commit history using
-# Conventional Commits:
-#   fix:  -> patch (x.y.Z)    feat: -> minor (x.Y.0)    feat!/BREAKING -> major
-# Commits that aren't fix/feat/breaking produce no release (the job no-ops).
+# Publishes a GitHub Release with an MSVC x64 build of the .asi. A release is
+# cut two ways:
+#   * Push to main      -> the next version is derived from Conventional Commits
+#                          (fix->patch, feat->minor, feat!/BREAKING->major;
+#                          anything else publishes nothing). Needs a prior
+#                          version tag as the baseline to analyse against.
+#   * Push a vX.Y.Z tag -> that exact version is built and released. Use this to
+#                          seed the first release or force a specific version.
 
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*.*.*' ]
   workflow_dispatch:   # allow manual runs from the Actions tab
 
 # Needed to create tags and publish releases with the default GITHUB_TOKEN.
@@ -29,40 +33,56 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Compute the next semver from Conventional Commits. dry_run = compute
-      # only; we create the tag at the release step so a failed build never
-      # leaves an orphan tag. default_bump:false = no release without fix/feat.
-      - name: Determine next version
-        id: ver
+      # Branch/manual runs: compute the next version from the commit history.
+      # dry_run = compute only; the tag is created at the publish step so a
+      # failed build never leaves an orphan tag. Skipped for tag pushes.
+      - name: Compute version from commits
+        id: semver
+        if: github.ref_type == 'branch'
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: true
           default_bump: false
 
-      - name: No release needed
-        if: steps.ver.outputs.new_version == ''
-        run: Write-Output "No fix/feat commits since the last tag - skipping release."
+      # Resolve the tag/version from whichever source applies. An empty version
+      # means "nothing to release" and gates every step below.
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $tag = $env:GITHUB_REF_NAME
+            $version = $tag -replace '^v', ''
+          } else {
+            $tag = '${{ steps.semver.outputs.new_tag }}'
+            $version = '${{ steps.semver.outputs.new_version }}'
+          }
+          "tag=$tag"         | Out-File $env:GITHUB_OUTPUT -Append
+          "version=$version" | Out-File $env:GITHUB_OUTPUT -Append
+          if ($version) { Write-Output "Releasing $tag (version $version)" }
+          else { Write-Output "No releasable commits since the last tag - skipping." }
 
       - name: Set up MSVC (x64)
-        if: steps.ver.outputs.new_version != ''
+        if: steps.ver.outputs.version != ''
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
 
       - name: Configure
-        if: steps.ver.outputs.new_version != ''
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPROJECT_VERSION=${{ steps.ver.outputs.new_version }}
+        if: steps.ver.outputs.version != ''
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPROJECT_VERSION=${{ steps.ver.outputs.version }}
 
       - name: Build
-        if: steps.ver.outputs.new_version != ''
+        if: steps.ver.outputs.version != ''
         run: cmake --build build --config Release
 
       - name: Package
-        if: steps.ver.outputs.new_version != ''
+        if: steps.ver.outputs.version != ''
+        id: pkg
         shell: pwsh
         run: |
-          $ver   = "${{ steps.ver.outputs.new_version }}"
+          $ver   = '${{ steps.ver.outputs.version }}'
           $stage = "007FirstLightUltrawide-v$ver"
           New-Item -ItemType Directory -Force $stage | Out-Null
           # Locate the artifacts regardless of single/multi-config layout.
@@ -72,14 +92,14 @@ jobs:
           Copy-Item $asi.FullName $stage
           if ($ini) { Copy-Item $ini.FullName $stage }
           Compress-Archive -Path "$stage/*" -DestinationPath "$stage.zip" -Force
-          "asset=$stage.zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-        id: pkg
+          "asset=$stage.zip" | Out-File $env:GITHUB_OUTPUT -Append
 
-      - name: Create release
-        if: steps.ver.outputs.new_version != ''
+      - name: Publish release
+        if: steps.ver.outputs.version != ''
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.new_tag }}
-          name: ${{ steps.ver.outputs.new_tag }}
-          body: ${{ steps.ver.outputs.changelog }}
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          body: ${{ steps.semver.outputs.changelog }}
+          generate_release_notes: true
           files: ${{ steps.pkg.outputs.asset }}
