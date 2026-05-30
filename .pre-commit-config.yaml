@@ -1,0 +1,36 @@
+# Pre-commit hooks. Install once with:  pre-commit install
+# (installs both the pre-commit and commit-msg stages thanks to the line below).
+#
+# clang-tidy is intentionally NOT run here - it needs a compile_commands.json and
+# must parse windows.h, which is slow/fragile locally. It runs in CI instead
+# (.github/workflows/cpp-linter.yml). These hooks stay fast: format + hygiene.
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  # ---- General hygiene ----------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml          # validates the workflow + .clang-* files
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # ---- C/C++ formatting (shares the project .clang-format) ----------------
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v19.1.7
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+
+  # ---- Conventional Commits (drives the semver release workflow) ----------
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: []   # default types: feat, fix, chore, docs, style, refactor, perf, test, build, ci, revert
