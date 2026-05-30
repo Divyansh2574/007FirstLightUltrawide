@@ -1,0 +1,84 @@
+name: Release
+
+# Build an MSVC Release of the .asi and publish a GitHub Release whenever a new
+# commit lands on main. The version is derived from the commit history using
+# Conventional Commits:
+#   fix:  -> patch (x.y.Z)    feat: -> minor (x.Y.0)    feat!/BREAKING -> major
+# Commits that aren't fix/feat/breaking produce no release (the job no-ops).
+
+on:
+  push:
+    branches: [ main ]
+
+# Needed to create tags and publish releases with the default GITHUB_TOKEN.
+permissions:
+  contents: write
+
+# Never let two releases race; queue them so version numbers stay monotonic.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout (full history for version calculation)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Compute the next semver from Conventional Commits. dry_run = compute
+      # only; we create the tag at the release step so a failed build never
+      # leaves an orphan tag. default_bump:false = no release without fix/feat.
+      - name: Determine next version
+        id: ver
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
+          default_bump: false
+
+      - name: No release needed
+        if: steps.ver.outputs.new_version == ''
+        run: Write-Output "No fix/feat commits since the last tag - skipping release."
+
+      - name: Set up MSVC (x64)
+        if: steps.ver.outputs.new_version != ''
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        if: steps.ver.outputs.new_version != ''
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPROJECT_VERSION=${{ steps.ver.outputs.new_version }}
+
+      - name: Build
+        if: steps.ver.outputs.new_version != ''
+        run: cmake --build build --config Release
+
+      - name: Package
+        if: steps.ver.outputs.new_version != ''
+        shell: pwsh
+        run: |
+          $ver   = "${{ steps.ver.outputs.new_version }}"
+          $stage = "007FirstLightUltrawide-v$ver"
+          New-Item -ItemType Directory -Force $stage | Out-Null
+          # Locate the artifacts regardless of single/multi-config layout.
+          $asi = Get-ChildItem build -Recurse -Filter 007FirstLightUltrawide.asi | Select-Object -First 1
+          $ini = Get-ChildItem build -Recurse -Filter 007FirstLightUltrawide.ini | Select-Object -First 1
+          if (-not $asi) { throw "Build output .asi not found" }
+          Copy-Item $asi.FullName $stage
+          if ($ini) { Copy-Item $ini.FullName $stage }
+          Compress-Archive -Path "$stage/*" -DestinationPath "$stage.zip" -Force
+          "asset=$stage.zip" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+        id: pkg
+
+      - name: Create release
+        if: steps.ver.outputs.new_version != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.new_tag }}
+          name: ${{ steps.ver.outputs.new_tag }}
+          body: ${{ steps.ver.outputs.changelog }}
+          files: ${{ steps.pkg.outputs.asset }}
