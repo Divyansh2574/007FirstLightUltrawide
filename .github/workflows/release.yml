@@ -94,12 +94,22 @@ jobs:
           Compress-Archive -Path "$stage/*" -DestinationPath "$stage.zip" -Force
           "asset=$stage.zip" | Out-File $env:GITHUB_OUTPUT -Append
 
+      # Build categorized release notes from the Conventional Commits in range.
+      # Tag pushes describe the just-pushed tag (--latest); branch/manual runs
+      # describe the commits since the last tag, labelled with the new version.
+      - name: Generate release notes
+        if: steps.ver.outputs.version != ''
+        id: notes
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: ${{ github.ref_type == 'tag' && '--latest' || format('--unreleased --tag {0}', steps.ver.outputs.tag) }}
+
       - name: Publish release
         if: steps.ver.outputs.version != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
           name: ${{ steps.ver.outputs.tag }}
-          body: ${{ steps.semver.outputs.changelog }}
-          generate_release_notes: true
+          body: ${{ steps.notes.outputs.content }}
           files: ${{ steps.pkg.outputs.asset }}
