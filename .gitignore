@@ -1,0 +1,43 @@
+# ---- Build directories ----------------------------------------------------
+# CLion's default out-of-source dirs, plus a plain `build/` for command-line use.
+/build/
+/cmake-build-*/
+/out/
+
+# ---- CMake artifacts (in case of an in-source build) ----------------------
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+*.cmake
+!cmake/*.cmake          # keep checked-in toolchain files under cmake/
+
+# ---- Build outputs --------------------------------------------------------
+*.asi
+*.dll
+*.exe
+*.obj
+*.o
+*.lib
+*.a
+*.exp
+*.pdb
+*.ilk
+
+# The .ini is generated next to the .asi from the template in CMakeLists.txt.
+/007FirstLightUltrawide.ini
+# Runtime log written beside the .asi at game launch.
+*.log
+
+# ---- IDE / editor ---------------------------------------------------------
+.idea/
+.vs/
+*.user
+
+# ---- Local tooling --------------------------------------------------------
+.wakatime-project
+
+# ---- OS cruft -------------------------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
