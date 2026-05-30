@@ -1,0 +1,38 @@
+# clang-tidy configuration for the 007 First Light Ultrawide ASI.
+#
+# This is low-level Win32 code: it walks PE headers, scans process memory, and
+# talks to the C runtime directly. Several "modern C++" check families are
+# fundamentally at odds with that and are disabled below, each with a reason.
+# The enabled families still cover every real correctness issue (narrowing
+# conversions, misplaced const, uninitialized state, analyzer findings, etc.).
+
+Checks: >
+  -*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  misc-*,
+  performance-*,
+  portability-*,
+  readability-misleading-indentation,
+  readability-non-const-parameter,
+  readability-redundant-*,
+  -cert-err33-c,
+  -cert-dcl50-cpp,
+  -misc-include-cleaner,
+  -misc-use-anonymous-namespace,
+  -misc-use-internal-linkage
+
+# Rationale for the explicit exclusions above:
+#   cert-err33-c            Logging and path-building deliberately ignore the
+#                           return of fprintf/fputc/fclose/snprintf - the patch
+#                           is best-effort and must not fail because a log write
+#                           did. Re-enable if non-logging I/O is added.
+#   cert-dcl50-cpp          Log() is an intentional printf-style variadic helper.
+#   misc-include-cleaner    Demands every <windows.h> symbol be individually
+#                           included; nonsensical for the Win32 umbrella header.
+#   misc-use-anonymous-*    File-scope `static` is the established style here.
+#   misc-use-internal-*     DllMain must keep external linkage (it is exported).
+
+HeaderFilterRegex: 'dllmain\.cpp'
+WarningsAsErrors: ''

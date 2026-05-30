@@ -1,0 +1,16 @@
+# Formatting style for the 007 First Light Ultrawide ASI.
+# Tuned to match the existing hand-formatting: LLVM base, 4-space indent,
+# left-aligned pointers, short ifs/loops kept on one line.
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+IndentWidth:     4
+ColumnLimit:     100
+PointerAlignment: Left
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortBlocksOnASingleLine: Always
+KeepEmptyLinesAtTheStartOfBlocks: false
+SpaceAfterCStyleCast: false
+SortIncludes:    Never
