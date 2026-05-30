@@ -200,6 +200,11 @@ git push origin v1.0.0
 The workflow builds that exact version and publishes it. After a version tag
 exists, pushes to `main` take over and auto-increment from it.
 
+Release notes are generated automatically by
+[git-cliff](https://git-cliff.org) (`cliff.toml`), which groups the Conventional
+Commits in the release into sections — Features, Bug Fixes, Documentation,
+CI/CD, and so on — so every release ships a detailed, categorized changelog.
+
 > For releases to publish, the repo's **Settings → Actions → General → Workflow
 > permissions** must be set to *Read and write* (lets the default `GITHUB_TOKEN`
 > create tags and releases).
